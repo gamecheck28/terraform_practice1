@@ -9,6 +9,7 @@ variable env_prefix {}
 variable my_ip {}
 variable instance_type {}
 variable public_key_location {}
+variable private_key_location {}
 variable my_system_public_key {}
 
 resource "aws_vpc" "myapp-vpc" {
@@ -106,17 +107,39 @@ resource "aws_instance" "myapp-server" {
     #key_name = "server-client-key-pair"
     key_name = aws_key_pair.ssh-key.key_name
 
-    #user_data = <<EOF
-    #                #!/bin/bash
-    #                sudo yum update -y && sudo yum install -y docker
-    #                sudo systemctl start docker
-    #                sudo usermod -aG docker ec2-user
-    #                sudo docker run -p 8080:80 nginx
-    #            EOF
+    /*user_data = <<EOF
+                    sudo yum update -y && sudo yum install -y docker
+                    sudo systemctl start docker
+                    sudo usermod -aG docker ec2-user
+                    sudo docker run -p 8080:80 nginx
+                EOF*/
 
     #instead of the commands mentioning here, you can run the script directly as shown eblow
     user_data = file("entry-script.sh")
 
+    /*connection {
+        type = "ssh"
+        host = self.public_ip
+        user = "ec2-user"
+        private_key = file(var.private_key_location)
+    }
+
+    provisioner "file" {
+        source = "entry-script.sh"
+        destination = "/home/ec2-user/entry-script.sh"
+    }
+
+    provisioner "remote-exec" {
+        inline = [
+            "export ENV_VARIABLE=test",
+            "mkdir test"
+        ]
+    }*/
+
+    provisioner "local-exec" {
+        command = "echo ${self.public_dns}; echo ${self.public_ip}"
+    }
+    
     tags = {
         Name = "${var.env_prefix}-server"
     }
